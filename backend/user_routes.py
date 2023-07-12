@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from database_operations import DatabaseOperations
+from fastapi.security import OAuth2PasswordRequestForm
 from schemas import UserRequest, UserResponse
+from utils import authenticate_user
 
 router = APIRouter()
 
@@ -10,3 +12,13 @@ def create_user(user: UserRequest, db_operations: DatabaseOperations = Depends(D
     new_user = db_operations.create_user(user)
     return new_user
 
+@router.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db_operations: DatabaseOperations = Depends(DatabaseOperations)):
+    user = authenticate_user(db_operations, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return {"message": "Logged in successfully!"}

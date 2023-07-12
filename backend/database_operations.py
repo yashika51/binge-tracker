@@ -11,14 +11,13 @@ from schemas import UserBase, UserRequest, UserResponse
 from utils import get_password_hash
 
 class DatabaseOperations:
-    user_table: sa.Table = User.__table_
-    show_table: sa.Table = Show.__table_
-    episode_table: sa.Table = Episode.__table_
-
     def __init__(self, db: Session = Depends(get_db)):
         self._engine = engine
         self._logger = logging.getLogger(self.__class__.__name__)
         self.db = db
+
+    def get_user_by_email(self, email: str) -> User:
+        return self.db.query(User).filter(User.email == email).first()
 
     def create_user(self, user: UserRequest) -> UserResponse:
         hashed_password = get_password_hash(user.password)
