@@ -1,14 +1,18 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
 
-from database import Base
+Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
+    name = Column(String, index=True)
+    email = Column(String, index=True)
     password = Column(String)
+
+    shows = relationship("Show", back_populates="user")
 
 class Show(Base):
     __tablename__ = "shows"
@@ -18,6 +22,7 @@ class Show(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="shows")
+    episodes = relationship("Episode", back_populates="show")
 
 class Episode(Base):
     __tablename__ = "episodes"
@@ -28,7 +33,3 @@ class Episode(Base):
     show_id = Column(Integer, ForeignKey("shows.id"))
 
     show = relationship("Show", back_populates="episodes")
-
-# Relationships
-User.shows = relationship("Show", back_populates="user", cascade="all, delete, delete-orphan")
-Show.episodes = relationship("Episode", back_populates="show", cascade="all, delete, delete-orphan")
