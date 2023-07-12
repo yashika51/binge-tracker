@@ -1,9 +1,8 @@
-from fastapi import FastAPI
-from sqlalchemy.orm import sessionmaker
-from db_connection import engine
+from fastapi import FastAPI, APIRouter
+import user_routes
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+api_router = APIRouter(prefix="/v1")
+api_router.include_router(user_routes.router)
+
 
 app = FastAPI()
-
-# app.include_router()
