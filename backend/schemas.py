@@ -5,6 +5,7 @@ from pydantic import BaseModel
 class EpisodeBase(BaseModel):
     title: str
     watched: bool
+    show_id: int
 
 
 class EpisodeRequest(EpisodeBase):
@@ -29,6 +30,7 @@ class ShowRequest(ShowBase):
 class ShowResponse(ShowBase):
     id: int
     episodes: List[EpisodeBase] = []
+    watched_episodes: List[EpisodeBase] = []
 
     class Config:
         orm_mode = True
@@ -45,7 +47,7 @@ class UserRequest(UserBase):
 
 class UserResponse(UserBase):
     id: int
-    shows: List[ShowBase] = []
+    shows: List[ShowResponse] = []
 
     class Config:
         orm_mode = True
