@@ -9,10 +9,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    email = Column(String, index=True)
+    email = Column(String, unique=True, index=True)
     password = Column(String)
+    shows = relationship("Show", back_populates="viewer")
 
-    shows = relationship("Show", back_populates="user")
 
 class Show(Base):
     __tablename__ = "shows"
@@ -21,8 +21,9 @@ class Show(Base):
     title = Column(String, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
-    user = relationship("User", back_populates="shows")
-    episodes = relationship("Episode", back_populates="show")
+    viewer = relationship("User", back_populates="shows")
+    episodes = relationship("Episode", back_populates="parent_show")
+
 
 class Episode(Base):
     __tablename__ = "episodes"
@@ -31,5 +32,4 @@ class Episode(Base):
     title = Column(String, index=True)
     watched = Column(Boolean, default=False)
     show_id = Column(Integer, ForeignKey("shows.id"))
-
-    show = relationship("Show", back_populates="episodes")
+    parent_show = relationship("Show", back_populates="episodes")
