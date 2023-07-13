@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from database_operations import DatabaseOperations
 from schemas import ShowRequest, ShowResponse
+from typing import List
 
 router = APIRouter()
 
@@ -8,7 +9,7 @@ router = APIRouter()
 @router.get("/users/{user_id}/shows")
 def get_all_shows(
     user_id: int, db_operations: DatabaseOperations = Depends(DatabaseOperations)
-):
+) -> List[ShowResponse]:
     return db_operations.get_all_shows(user_id)
 
 

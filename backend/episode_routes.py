@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from database_operations import DatabaseOperations
 from typing import List
-from schemas import EpisodeRequest, EpisodeResponse
+from schemas import EpisodeRequest, EpisodeResponse, ShowResponse
 
 router = APIRouter()
 
@@ -50,3 +50,33 @@ def mark_episode_as_watched(
     db_operations: DatabaseOperations = Depends(DatabaseOperations),
 ):
     return db_operations.mark_episode_as_watched(user_id, show_id, episode_id)
+
+
+@router.get(
+    "/users/{user_id}/shows/{show_id}/next_episode", response_model=EpisodeResponse
+)
+def get_next_episode(
+    user_id: int,
+    show_id: int,
+    db_operations: DatabaseOperations = Depends(DatabaseOperations),
+):
+    next_episode = db_operations.get_next_episode(user_id, show_id)
+    if not next_episode:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No next episode found for the show.",
+        )
+    return next_episode
+
+
+@router.get(
+    "/users/{user_id}/shows-with-next-episode", response_model=List[ShowResponse]
+)
+def get_show_list_with_next_episode(
+    user_id: int, db_operations: DatabaseOperations = Depends(DatabaseOperations)
+):
+    shows = db_operations.get_all_shows(user_id)
+    for show in shows:
+        next_episode = db_operations.get_next_episode(user_id, show.id)
+        show.next_episode = next_episode
+    return shows

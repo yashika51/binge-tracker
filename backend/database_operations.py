@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 from fastapi import Depends
+from sqlalchemy import asc
 from sqlalchemy.orm import Session
 import logging
 from typing import Optional, List, Tuple
@@ -163,3 +164,42 @@ class DatabaseOperations:
                 show_id=episode.show_id,
             )
         return None
+
+    def get_next_episode(self, user_id: int, show_id: int) -> Optional[EpisodeResponse]:
+        db_episode = (
+            self.db.query(Episode)
+            .join(Show)
+            .filter(
+                Episode.show_id == show_id,
+                Show.viewer_id == user_id,
+                Episode.watched == False,
+            )
+            .order_by(asc(Episode.id))
+            .first()
+        )
+        if db_episode:
+            return EpisodeResponse(**db_episode.__dict__)
+        return None
+
+    def get_show_list_with_next_episode(self, user_id: int) -> List[ShowResponse]:
+        db_shows = self.db.query(Show).filter(Show.viewer_id == user_id).all()
+
+        show_list = []
+        for db_show in db_shows:
+            next_episode = self.get_next_episode(user_id, db_show.id)
+            show = ShowResponse(
+                id=db_show.id,
+                title=db_show.title,
+                episodes=[
+                    EpisodeResponse(**episode.__dict__) for episode in db_show.episodes
+                ],
+                watched_episodes=[
+                    EpisodeResponse(**episode.__dict__)
+                    for episode in db_show.episodes
+                    if episode.watched
+                ],
+                next_episode=next_episode,
+            )
+            show_list.append(show)
+
+        return show_list

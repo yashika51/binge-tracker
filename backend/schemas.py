@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -29,8 +29,9 @@ class ShowRequest(ShowBase):
 
 class ShowResponse(ShowBase):
     id: int
-    episodes: List[EpisodeBase] = []
-    watched_episodes: List[EpisodeBase] = []
+    episodes: List[EpisodeResponse] = []
+    watched_episodes: List[EpisodeResponse] = []
+    next_episode: Optional[EpisodeResponse] = None
 
     class Config:
         orm_mode = True
