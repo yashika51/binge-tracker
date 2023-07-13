@@ -3,8 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import Depends
 from database_operations import get_db
-import user_routes, show_routes, episode_routes
-
+import show_routes, episode_routes, user_routes
 
 app = FastAPI()
 
@@ -24,4 +23,6 @@ app.add_middleware(
 
 app.include_router(user_routes.router, tags=["users"], dependencies=[Depends(get_db)])
 app.include_router(show_routes.router, tags=["shows"], dependencies=[Depends(get_db)])
-app.include_router(episode_routes.router, tags=["episodes"], dependencies=[Depends(get_db)])
+app.include_router(
+    episode_routes.router, tags=["episodes"], dependencies=[Depends(get_db)]
+)
