@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from fastapi import Depends
 from sqlalchemy.orm import Session
 import logging
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from db_engine import engine, get_db
 from models import User, Show, Episode
 from sqlalchemy.exc import IntegrityError
@@ -17,19 +17,22 @@ class DatabaseOperations:
         self.db = db
 
     def authenticate_user(self, username: str, password: str):
-        user = self.get_user_by_email(username)
-        if not user:
+        user_email, hashed_password = self.get_user_data(username)
+        if not user_email:
             return False
-        if not verify_password(password, user.hashed_password):
+        if not verify_password(password, hashed_password):
             return False
-        return user
+        return user_email
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
-        return self.db.query(User).filter(User.email == email).first()
+    def get_user_data(self, email: str) -> Optional[Tuple[str, str]]:
+        user = self.db.query(User).filter(User.email == email).first()
+        if user:
+            return user.email, user.password
+        return None
 
     def create_user(self, user: UserRequest) -> UserResponse:
         hashed_password = get_password_hash(user.password)
-        db_user = User(**user.model_dump(), hashed_password=hashed_password)
+        db_user = User(name=user.name, email=user.email, password=hashed_password)
         try:
             self.db.add(db_user)
             self.db.commit()
@@ -40,7 +43,7 @@ class DatabaseOperations:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User with this email already exists."
             )
-        return UserResponse(**db_user.dict())
+        return UserResponse(id=db_user.id, name=db_user.name, email=db_user.email, shows=[])
 
     def get_all_shows(self, user_id: int) -> List[ShowResponse]:
         shows = self.db.query(Show).filter(Show.viewer_id == user_id).all()
