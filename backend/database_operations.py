@@ -1,14 +1,14 @@
-import sqlalchemy as sa
 from fastapi import HTTPException, status
 from sqlalchemy import insert
 from fastapi import Depends
 from sqlalchemy.orm import Session
 import logging
-from typing import List
+from typing import Optional
 from db_engine import engine, get_db
 from models import User, Show, Episode
 from sqlalchemy.exc import IntegrityError
-from schemas import UserBase, UserRequest, UserResponse, ShowResponse, ShowRequest
+from schemas import  UserRequest, UserResponse, ShowRequest
+from schemas import EpisodeRequest, EpisodeResponse
 from utils import get_password_hash
 
 class DatabaseOperations:
@@ -17,7 +17,7 @@ class DatabaseOperations:
         self._logger = logging.getLogger(self.__class__.__name__)
         self.db = db
 
-    def get_user_by_email(self, email: str) -> User:
+    def get_user_by_email(self, email: str) -> Optional[User]:
         return self.db.query(User).filter(User.email == email).first()
 
     def create_user(self, user: UserRequest) -> UserResponse:
@@ -50,4 +50,13 @@ class DatabaseOperations:
             self.db.delete(show)
             self.db.commit()
         return show
+
+    def mark_episode_as_watched(self, user_id: int, show_id: int, episode_id: int):
+        db_episode = self.db.query(Episode).join(Show).filter(Episode.id == episode_id, Show.id == show_id,
+                                                              Show.viewer_id == user_id).first()
+        if db_episode:
+            db_episode.watched = True
+            self.db.commit()
+            return EpisodeResponse(**db_episode.__dict__)
+        return None
 
