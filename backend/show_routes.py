@@ -3,8 +3,6 @@ from database_operations import DatabaseOperations
 from typing import List
 from fastapi.security import OAuth2PasswordRequestForm
 from schemas import ShowRequest, ShowResponse
-from utils import authenticate_user
-
 router = APIRouter()
 
 @router.get("/users/{user_id}/shows")

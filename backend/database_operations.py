@@ -1,21 +1,28 @@
 from fastapi import HTTPException, status
-from sqlalchemy import insert
 from fastapi import Depends
 from sqlalchemy.orm import Session
 import logging
-from typing import Optional
+from typing import Optional, List
 from db_engine import engine, get_db
 from models import User, Show, Episode
 from sqlalchemy.exc import IntegrityError
-from schemas import  UserRequest, UserResponse, ShowRequest
+from schemas import  UserRequest, UserResponse, ShowRequest, ShowResponse
 from schemas import EpisodeRequest, EpisodeResponse
-from utils import get_password_hash
+from utils import get_password_hash, verify_password
 
 class DatabaseOperations:
     def __init__(self, db: Session = Depends(get_db)):
         self._engine = engine
         self._logger = logging.getLogger(self.__class__.__name__)
         self.db = db
+
+    def authenticate_user(self, username: str, password: str):
+        user = self.get_user_by_email(username)
+        if not user:
+            return False
+        if not verify_password(password, user.hashed_password):
+            return False
+        return user
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         return self.db.query(User).filter(User.email == email).first()
@@ -35,21 +42,25 @@ class DatabaseOperations:
             )
         return UserResponse(**db_user.dict())
 
-    def get_all_shows(self, user_id: int):
-        return self.db.query(Show).filter(Show.viewer_id == user_id).all()
+    def get_all_shows(self, user_id: int) -> List[ShowResponse]:
+        shows = self.db.query(Show).filter(Show.viewer_id == user_id).all()
+        return [ShowResponse(**show.__dict__) for show in shows]
 
-    def add_show(self, user_id: int, show: ShowRequest):
-        new_show = Show(**show.model_dump(), viewer_id=user_id)
+    def add_show(self, user_id: int, show: ShowRequest) -> ShowResponse:
+        new_show = Show(**show.dict(), viewer_id=user_id)
         self.db.add(new_show)
         self.db.commit()
-        return new_show
+        self.db.refresh(new_show)
+        return ShowResponse(**new_show.__dict__)
 
-    def delete_show(self, user_id: int, show_id: int):
+    def delete_show(self, user_id: int, show_id: int) -> ShowResponse:
         show = self.db.query(Show).filter(Show.viewer_id == user_id, Show.id == show_id).first()
         if show:
+            show_data = ShowResponse(**show.__dict__)
             self.db.delete(show)
             self.db.commit()
-        return show
+            return show_data
+        return None
 
     def mark_episode_as_watched(self, user_id: int, show_id: int, episode_id: int):
         db_episode = self.db.query(Episode).join(Show).filter(Episode.id == episode_id, Show.id == show_id,
